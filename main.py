@@ -7,7 +7,7 @@ import os
 class StorageCalculatorApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Расчет площади склада заполнителей")
+        self.root.title("Расчет площади склада заполнителей (по формуле S = V/(q·Kис))")
         self.root.geometry("800x600")
         
         # Переменные для хранения данных
@@ -42,7 +42,7 @@ class StorageCalculatorApp:
             ttk.Label(frame, text=f"Параметры для {material}", font=('Arial', 12, 'bold')).grid(row=0, column=0, columnspan=2, pady=5)
             
             # Объем материала
-            ttk.Label(frame, text="Объем склада заполнителей (м³):").grid(row=1, column=0, sticky=tk.W, pady=5)
+            ttk.Label(frame, text="Объем склада заполнителей V (м³):").grid(row=1, column=0, sticky=tk.W, pady=5)
             self.volume_vars[material] = tk.DoubleVar()
             ttk.Entry(frame, textvariable=self.volume_vars[material]).grid(row=1, column=1, pady=5)
             
@@ -85,7 +85,7 @@ class StorageCalculatorApp:
         ttk.Button(button_frame, text="Очистить", command=self.clear_fields).pack(side=tk.LEFT, padx=5)
         
         # Результаты
-        results_frame = ttk.LabelFrame(main_frame, text="Результаты расчета", padding="10")
+        results_frame = ttk.LabelFrame(main_frame, text="Результаты расчета по формуле S = V/(q·Kис)", padding="10")
         results_frame.pack(fill=tk.BOTH, expand=True)
         
         self.results_text = tk.Text(results_frame, height=10, wrap=tk.WORD)
@@ -114,7 +114,6 @@ class StorageCalculatorApp:
     def calculate(self):
         try:
             results = []
-            total_useful_area = 0
             total_area = 0
             
             for material in self.materials:
@@ -125,10 +124,9 @@ class StorageCalculatorApp:
                 q = self.q_vars[material].get()
                 kis = self.kis_vars[material].get()
                 
-                useful_area = volume / q
-                area = useful_area / kis
+                # Расчет по формуле S = V/(q·Kис)
+                area = volume / (q * kis)
                 
-                total_useful_area += useful_area
                 total_area += area
                 
                 results.append({
@@ -136,27 +134,21 @@ class StorageCalculatorApp:
                     "volume": volume,
                     "q": q,
                     "kis": kis,
-                    "useful_area": useful_area,
                     "area": area
                 })
             
             # Формируем текст результатов
-            result_text = "РЕЗУЛЬТАТЫ РАСЧЕТА:\n\n"
+            result_text = "РЕЗУЛЬТАТЫ РАСЧЕТА (по формуле S = V/(q·Kис)):\n\n"
             for res in results:
                 result_text += (
                     f"{res['material']}:\n"
-                    f" - Объем склада: {res['volume']:.2f} м³\n"
+                    f" - Объем склада (V): {res['volume']:.2f} м³\n"
                     f" - Количество на 1 м² (q): {res['q']:.1f} м³/м²\n"
                     f" - Коэффициент использования (Кис): {res['kis']:.2f}\n"
-                    f" - Полезная площадь: {res['useful_area']:.2f} м²\n"
-                    f" - Общая площадь: {res['area']:.2f} м²\n\n"
+                    f" - Рассчитанная площадь: {res['area']:.2f} м²\n\n"
                 )
             
-            result_text += (
-                f"ИТОГО:\n"
-                f" - Общая полезная площадь: {total_useful_area:.2f} м²\n"
-                f" - Общая площадь склада: {total_area:.2f} м²"
-            )
+            result_text += f"ОБЩАЯ ПЛОЩАДЬ СКЛАДА: {total_area:.2f} м²"
             
             self.results_text.delete(1.0, tk.END)
             self.results_text.insert(tk.END, result_text)
@@ -165,7 +157,6 @@ class StorageCalculatorApp:
             # Сохраняем результаты для экспорта
             self.last_results = {
                 "materials": results,
-                "total_useful_area": total_useful_area,
                 "total_area": total_area
             }
             
@@ -184,8 +175,7 @@ class StorageCalculatorApp:
             ws.title = "Результаты расчета"
             
             # Заголовки
-            headers = ["Материал", "Объем склада (м³)", "q (м³/м²)", "Кис", 
-                      "Полезная площадь (м²)", "Общая площадь (м²)"]
+            headers = ["Материал", "Объем склада (м³)", "q (м³/м²)", "Кис", "Площадь (м²)"]
             
             for col, header in enumerate(headers, 1):
                 ws.cell(row=1, column=col, value=header).font = Font(bold=True)
@@ -196,14 +186,12 @@ class StorageCalculatorApp:
                 ws.cell(row=row, column=2, value=res['volume'])
                 ws.cell(row=row, column=3, value=res['q'])
                 ws.cell(row=row, column=4, value=res['kis'])
-                ws.cell(row=row, column=5, value=res['useful_area'])
-                ws.cell(row=row, column=6, value=res['area'])
+                ws.cell(row=row, column=5, value=res['area'])
             
             # Итоги
             last_row = len(self.last_results['materials']) + 3
             ws.cell(row=last_row, column=1, value="ИТОГО:").font = Font(bold=True)
-            ws.cell(row=last_row, column=5, value=self.last_results['total_useful_area']).font = Font(bold=True)
-            ws.cell(row=last_row, column=6, value=self.last_results['total_area']).font = Font(bold=True)
+            ws.cell(row=last_row, column=5, value=self.last_results['total_area']).font = Font(bold=True)
             
             # Автоширина столбцов
             for col in ws.columns:
