@@ -2,8 +2,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from openpyxl import Workbook
 from openpyxl.styles import Font
-import os
 import traceback
+import datetime
 
 class StorageCalculatorApp:
     def __init__(self, root):
@@ -171,15 +171,14 @@ class StorageCalculatorApp:
             return
         
         try:
-            # Запрашиваем путь для сохранения файла
             file_path = filedialog.asksaveasfilename(
                 defaultextension=".xlsx",
                 filetypes=[("Excel files", "*.xlsx"), ("All files", "*.*")],
-                initialfile="Расчет_площади_склада.xlsx",
+                initialfile=f"Расчет_площади_склада_{datetime.datetime.now().strftime(('%Y-%m-%d_%H-%M-%S'))}.xlsx",
                 title="Выберите место для сохранения файла"
             )
             
-            if not file_path:  # Пользователь отменил сохранение
+            if not file_path:  # Отмена сохранения
                 return
             
             wb = Workbook()
