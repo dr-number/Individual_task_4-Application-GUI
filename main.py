@@ -13,18 +13,21 @@ class StorageCalculatorApp:
         
         self.materials = ["Щебень", "Керамзит", "Песок"]
         self.storage_types = {
-            "Открытый склад штабельного типа": {"q_range": (3, 4), "height_range": (5, 6)},
-            "Другие типы складов": {"q_range": (5, 7), "height_range": None}
+            "Открытый склад штабельного типа": {
+                "q_range": (3, 4), 
+                "height_range": (5, 6)
+            },
+            "Другие типы складов": {
+                "q_range": (5, 7), 
+                "height_range": None
+            }
         }
         
         self.create_widgets()
     
     def create_widgets(self):
-        # Основной контейнер
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.pack(fill=tk.BOTH, expand=True)
-        
-        # Вкладки для разных материалов
         self.notebook = ttk.Notebook(main_frame)
         
         self.material_frames = {}
@@ -38,28 +41,41 @@ class StorageCalculatorApp:
             self.material_frames[material] = frame
             self.notebook.add(frame, text=material)
             
-            # Заголовок
-            ttk.Label(frame, text=f"Параметры для {material}", font=('Arial', 12, 'bold')).grid(row=0, column=0, columnspan=2, pady=5)
+            ttk.Label(
+                frame, 
+                text=f"Параметры для {material}", 
+                font=('Arial', 12, 'bold')
+            ).grid(row=0, column=0, columnspan=2, pady=5)
             
-            # Объем материала
-            ttk.Label(frame, text="Объем склада заполнителей V (м³):").grid(row=1, column=0, sticky=tk.W, pady=5)
+            ttk.Label(
+                frame, 
+                text="Объем склада заполнителей V (м³):"
+            ).grid(row=1, column=0, sticky=tk.W, pady=5)
+
             self.volume_vars[material] = tk.DoubleVar()
             ttk.Entry(frame, textvariable=self.volume_vars[material]).grid(row=1, column=1, pady=5)
             
-            # Тип склада
             ttk.Label(frame, text="Тип склада:").grid(row=2, column=0, sticky=tk.W, pady=5)
             self.storage_type_vars[material] = tk.StringVar()
-            storage_type_cb = ttk.Combobox(frame, textvariable=self.storage_type_vars[material], 
-                                         values=list(self.storage_types.keys()))
+            storage_type_cb = ttk.Combobox(
+                frame, 
+                textvariable=self.storage_type_vars[material], 
+                values=list(self.storage_types.keys())
+            )
             storage_type_cb.grid(row=2, column=1, pady=5)
             storage_type_cb.bind("<<ComboboxSelected>>", lambda e, mat=material: self.update_q_slider(mat))
             
-            # Количество материала на 1 м² (q)
             ttk.Label(frame, text="Количество материала на 1 м² (q, м³/м²):").grid(row=3, column=0, sticky=tk.W, pady=5)
             self.q_vars[material] = tk.DoubleVar()
             self.q_sliders = {}
-            self.q_sliders[material] = ttk.Scale(frame, from_=3, to=7, variable=self.q_vars[material], 
-                                               command=lambda v, mat=material: self.update_q_value(mat))
+            self.q_sliders[material] = ttk.Scale(
+                frame, 
+                from_=3, 
+                to=7, 
+                variable=self.q_vars[material], 
+                command=lambda v, 
+                mat=material: self.update_q_value(mat)
+            )
             self.q_sliders[material].grid(row=3, column=1, pady=5, sticky=tk.EW)
             self.q_value_labels = {}
             self.q_value_labels[material] = ttk.Label(frame, text="3.0")
@@ -68,15 +84,20 @@ class StorageCalculatorApp:
             # Коэффициент использования площади (Кис)
             ttk.Label(frame, text="Коэффициент использования площади (Кис):").grid(row=4, column=0, sticky=tk.W, pady=5)
             self.kis_vars[material] = tk.DoubleVar(value=0.7)
-            ttk.Scale(frame, from_=0.7, to=0.8, variable=self.kis_vars[material], 
-                     command=lambda v, mat=material: self.update_kis_value(mat)).grid(row=4, column=1, pady=5, sticky=tk.EW)
+            ttk.Scale(
+                frame, 
+                from_=0.7, 
+                to=0.8, 
+                variable=self.kis_vars[material], 
+                command=lambda v, 
+                mat=material: self.update_kis_value(mat)
+            ).grid(row=4, column=1, pady=5, sticky=tk.EW)
+
             self.kis_value_labels = {}
             self.kis_value_labels[material] = ttk.Label(frame, text="0.70")
             self.kis_value_labels[material].grid(row=4, column=2, padx=5)
         
         self.notebook.pack(fill=tk.BOTH, expand=True)
-        
-        # Кнопки расчета
         button_frame = ttk.Frame(main_frame)
         button_frame.pack(fill=tk.X, pady=10)
         
@@ -84,14 +105,12 @@ class StorageCalculatorApp:
         ttk.Button(button_frame, text="Сохранить в Excel", command=self.save_to_excel).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text="Очистить", command=self.clear_fields).pack(side=tk.LEFT, padx=5)
         
-        # Результаты
         results_frame = ttk.LabelFrame(main_frame, text="Результаты расчета по формуле S = V/(q·Kис)", padding="10")
         results_frame.pack(fill=tk.BOTH, expand=True)
         
         self.results_text = tk.Text(results_frame, height=10, wrap=tk.WORD)
         self.results_text.pack(fill=tk.BOTH, expand=True)
         
-        # Статус бар
         self.status_var = tk.StringVar(value="Готов к работе")
         ttk.Label(main_frame, textvariable=self.status_var, relief=tk.SUNKEN).pack(fill=tk.X, pady=5)
     
@@ -137,7 +156,6 @@ class StorageCalculatorApp:
                     "area": _s
                 })
             
-            # Формируем текст результатов
             result_text = "РЕЗУЛЬТАТЫ РАСЧЕТА (по формуле S = V/(q·Kис)):\n\n"
             for res in results:
                 result_text += (
@@ -154,7 +172,6 @@ class StorageCalculatorApp:
             self.results_text.insert(tk.END, result_text)
             self.status_var.set("Расчет выполнен успешно")
             
-            # Сохраняем результаты для экспорта
             self.last_results = {
                 "materials": results,
                 "total_area": total_area
