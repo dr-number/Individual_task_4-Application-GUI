@@ -9,7 +9,7 @@ class StorageCalculatorApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Расчет площади склада заполнителей (по формуле S = V/(q·Kис))")
-        self.root.geometry("800x900")
+        self.root.geometry("1000x1200")
         
         self.materials = ["Щебень", "Керамзит", "Песок"]
         self.storage_types = {
@@ -28,76 +28,70 @@ class StorageCalculatorApp:
     def create_widgets(self):
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.pack(fill=tk.BOTH, expand=True)
-        self.notebook = ttk.Notebook(main_frame)
         
+        # Создаем фреймы для каждого материала
         self.material_frames = {}
         self.volume_vars = {}
         self.storage_type_vars = {}
         self.q_vars = {}
         self.kis_vars = {}
         
-        for material in self.materials:
-            frame = ttk.Frame(self.notebook, padding="10")
-            self.material_frames[material] = frame
-            self.notebook.add(frame, text=material)
+        for i, material in enumerate(self.materials):
+            material_frame = ttk.LabelFrame(main_frame, text=f"Параметры для {material}", padding="10")
+            material_frame.pack(fill=tk.X, padx=5, pady=5)
+            self.material_frames[material] = material_frame
             
-            ttk.Label(
-                frame, 
-                text=f"Параметры для {material}", 
-                font=('Arial', 12, 'bold')
-            ).grid(row=0, column=0, columnspan=2, pady=5)
-            
-            ttk.Label(
-                frame, 
-                text="Объем склада заполнителей V (м³):"
-            ).grid(row=1, column=0, sticky=tk.W, pady=5)
-
+            # Объем склада
+            ttk.Label(material_frame, text="Объем склада заполнителей V (м³):").grid(row=0, column=0, sticky=tk.W, pady=5)
             self.volume_vars[material] = tk.DoubleVar()
-            ttk.Entry(frame, textvariable=self.volume_vars[material]).grid(row=1, column=1, pady=5)
+            ttk.Entry(material_frame, textvariable=self.volume_vars[material]).grid(row=0, column=1, pady=5, sticky=tk.EW)
             
-            ttk.Label(frame, text="Тип склада:").grid(row=2, column=0, sticky=tk.W, pady=5)
+            # Тип склада
+            ttk.Label(material_frame, text="Тип склада:").grid(row=1, column=0, sticky=tk.W, pady=5)
             self.storage_type_vars[material] = tk.StringVar()
             storage_type_cb = ttk.Combobox(
-                frame, 
+                material_frame, 
                 textvariable=self.storage_type_vars[material], 
-                values=list(self.storage_types.keys())
+                values=list(self.storage_types.keys()),
+                state="readonly"
             )
-            storage_type_cb.grid(row=2, column=1, pady=5)
+            storage_type_cb.grid(row=1, column=1, pady=5, sticky=tk.EW)
             storage_type_cb.bind("<<ComboboxSelected>>", lambda e, mat=material: self.update_q_slider(mat))
             
-            ttk.Label(frame, text="Количество материала на 1 м² (q, м³/м²):").grid(row=3, column=0, sticky=tk.W, pady=5)
-            self.q_vars[material] = tk.DoubleVar()
+            # Количество материала на 1 м² (q)
+            ttk.Label(material_frame, text="Количество материала на 1 м² (q, м³/м²):").grid(row=2, column=0, sticky=tk.W, pady=5)
+            self.q_vars[material] = tk.DoubleVar(value=3)
             self.q_sliders = {}
             self.q_sliders[material] = ttk.Scale(
-                frame, 
+                material_frame, 
                 from_=3, 
                 to=7, 
                 variable=self.q_vars[material], 
-                command=lambda v, 
-                mat=material: self.update_q_value(mat)
+                command=lambda v, mat=material: self.update_q_value(mat)
             )
-            self.q_sliders[material].grid(row=3, column=1, pady=5, sticky=tk.EW)
+            self.q_sliders[material].grid(row=2, column=1, pady=5, sticky=tk.EW)
             self.q_value_labels = {}
-            self.q_value_labels[material] = ttk.Label(frame, text="3.0")
-            self.q_value_labels[material].grid(row=3, column=2, padx=5)
+            self.q_value_labels[material] = ttk.Label(material_frame, text="3.0")
+            self.q_value_labels[material].grid(row=2, column=2, padx=5)
             
             # Коэффициент использования площади (Кис)
-            ttk.Label(frame, text="Коэффициент использования площади (Кис):").grid(row=4, column=0, sticky=tk.W, pady=5)
+            ttk.Label(material_frame, text="Коэффициент использования площади (Кис):").grid(row=3, column=0, sticky=tk.W, pady=5)
             self.kis_vars[material] = tk.DoubleVar(value=0.7)
             ttk.Scale(
-                frame, 
+                material_frame, 
                 from_=0.7, 
                 to=0.8, 
                 variable=self.kis_vars[material], 
-                command=lambda v, 
-                mat=material: self.update_kis_value(mat)
-            ).grid(row=4, column=1, pady=5, sticky=tk.EW)
-
+                command=lambda v, mat=material: self.update_kis_value(mat)
+            ).grid(row=3, column=1, pady=5, sticky=tk.EW)
             self.kis_value_labels = {}
-            self.kis_value_labels[material] = ttk.Label(frame, text="0.70")
-            self.kis_value_labels[material].grid(row=4, column=2, padx=5)
+            self.kis_value_labels[material] = ttk.Label(material_frame, text="0.70")
+            self.kis_value_labels[material].grid(row=3, column=2, padx=5)
+            
+            # Настройка веса колонок для правильного растягивания
+            material_frame.columnconfigure(1, weight=1)
         
-        self.notebook.pack(fill=tk.BOTH, expand=True)
+        # Кнопки управления
         button_frame = ttk.Frame(main_frame)
         button_frame.pack(fill=tk.X, pady=10)
         
@@ -105,14 +99,23 @@ class StorageCalculatorApp:
         ttk.Button(button_frame, text="Сохранить в Excel", command=self.save_to_excel).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text="Очистить", command=self.clear_fields).pack(side=tk.LEFT, padx=5)
         
+        # Результаты
         results_frame = ttk.LabelFrame(main_frame, text="Результаты расчета по формуле S = V/(q·Kис)", padding="10")
         results_frame.pack(fill=tk.BOTH, expand=True)
         
         self.results_text = tk.Text(results_frame, height=10, wrap=tk.WORD)
         self.results_text.pack(fill=tk.BOTH, expand=True)
         
+        scrollbar = ttk.Scrollbar(results_frame, orient="vertical", command=self.results_text.yview)
+        scrollbar.pack(side="right", fill="y")
+        self.results_text.config(yscrollcommand=scrollbar.set)
+        
+        # Статус
         self.status_var = tk.StringVar(value="Готов к работе")
         ttk.Label(main_frame, textvariable=self.status_var, relief=tk.SUNKEN).pack(fill=tk.X, pady=5)
+        
+        # Настройка веса для правильного растягивания
+        main_frame.columnconfigure(0, weight=1)
     
     def update_q_slider(self, material):
         storage_type = self.storage_type_vars[material].get()
