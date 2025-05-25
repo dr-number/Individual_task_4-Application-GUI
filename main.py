@@ -9,9 +9,8 @@ class StorageCalculatorApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Расчет площади склада заполнителей (по формуле S = V/(q·Kис))")
-        self.root.geometry("800x600")
+        self.root.geometry("800x900")
         
-        # Переменные для хранения данных
         self.materials = ["Щебень", "Керамзит", "Песок"]
         self.storage_types = {
             "Открытый склад штабельного типа": {"q_range": (3, 4), "height_range": (5, 6)},
@@ -167,8 +166,7 @@ class StorageCalculatorApp:
     
     def save_to_excel(self):
         if not hasattr(self, 'last_results'):
-            messagebox.showwarning("Предупреждение", "Сначала выполните расчет")
-            return
+            self.calculate()
         
         try:
             file_path = filedialog.asksaveasfilename(
