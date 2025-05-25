@@ -23,18 +23,21 @@ class StorageCalculatorApp:
             }
         }
         
-        self.create_widgets()
-    
-    def create_widgets(self):
-        main_frame = ttk.Frame(self.root, padding="10")
-        main_frame.pack(fill=tk.BOTH, expand=True)
-        
-        # Создаем фреймы для каждого материала
+        # Инициализация словарей перед созданием виджетов
         self.material_frames = {}
         self.volume_vars = {}
         self.storage_type_vars = {}
         self.q_vars = {}
         self.kis_vars = {}
+        self.q_sliders = {}
+        self.q_value_labels = {}
+        self.kis_value_labels = {}
+        
+        self.create_widgets()
+    
+    def create_widgets(self):
+        main_frame = ttk.Frame(self.root, padding="10")
+        main_frame.pack(fill=tk.BOTH, expand=True)
         
         for i, material in enumerate(self.materials):
             material_frame = ttk.LabelFrame(main_frame, text=f"Параметры для {material}", padding="10")
@@ -61,7 +64,6 @@ class StorageCalculatorApp:
             # Количество материала на 1 м² (q)
             ttk.Label(material_frame, text="Количество материала на 1 м² (q, м³/м²):").grid(row=2, column=0, sticky=tk.W, pady=5)
             self.q_vars[material] = tk.DoubleVar(value=3)
-            self.q_sliders = {}
             self.q_sliders[material] = ttk.Scale(
                 material_frame, 
                 from_=3, 
@@ -70,7 +72,6 @@ class StorageCalculatorApp:
                 command=lambda v, mat=material: self.update_q_value(mat)
             )
             self.q_sliders[material].grid(row=2, column=1, pady=5, sticky=tk.EW)
-            self.q_value_labels = {}
             self.q_value_labels[material] = ttk.Label(material_frame, text="3.0")
             self.q_value_labels[material].grid(row=2, column=2, padx=5)
             
@@ -84,14 +85,11 @@ class StorageCalculatorApp:
                 variable=self.kis_vars[material], 
                 command=lambda v, mat=material: self.update_kis_value(mat)
             ).grid(row=3, column=1, pady=5, sticky=tk.EW)
-            self.kis_value_labels = {}
             self.kis_value_labels[material] = ttk.Label(material_frame, text="0.70")
             self.kis_value_labels[material].grid(row=3, column=2, padx=5)
             
-            # Настройка веса колонок для правильного растягивания
             material_frame.columnconfigure(1, weight=1)
         
-        # Кнопки управления
         button_frame = ttk.Frame(main_frame)
         button_frame.pack(fill=tk.X, pady=10)
         
@@ -99,7 +97,6 @@ class StorageCalculatorApp:
         ttk.Button(button_frame, text="Сохранить в Excel", command=self.save_to_excel).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text="Очистить", command=self.clear_fields).pack(side=tk.LEFT, padx=5)
         
-        # Результаты
         results_frame = ttk.LabelFrame(main_frame, text="Результаты расчета по формуле S = V/(q·Kис)", padding="10")
         results_frame.pack(fill=tk.BOTH, expand=True)
         
@@ -110,11 +107,9 @@ class StorageCalculatorApp:
         scrollbar.pack(side="right", fill="y")
         self.results_text.config(yscrollcommand=scrollbar.set)
         
-        # Статус
         self.status_var = tk.StringVar(value="Готов к работе")
         ttk.Label(main_frame, textvariable=self.status_var, relief=tk.SUNKEN).pack(fill=tk.X, pady=5)
         
-        # Настройка веса для правильного растягивания
         main_frame.columnconfigure(0, weight=1)
     
     def update_q_slider(self, material):
@@ -146,9 +141,7 @@ class StorageCalculatorApp:
                 q = self.q_vars[material].get()
                 kis = self.kis_vars[material].get()
                 
-                # Расчет по формуле S = V/(q·Kис)
                 _s = _v / (q * kis)
-                
                 total_area += _s
                 
                 results.append({
