@@ -1,8 +1,9 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 from openpyxl import Workbook
 from openpyxl.styles import Font
 import os
+import traceback
 
 class StorageCalculatorApp:
     def __init__(self, root):
@@ -117,24 +118,24 @@ class StorageCalculatorApp:
             total_area = 0
             
             for material in self.materials:
-                volume = self.volume_vars[material].get()
-                if volume <= 0:
+                _v = self.volume_vars[material].get()
+                if _v <= 0:
                     raise ValueError(f"Объем для {material} должен быть положительным числом")
                 
                 q = self.q_vars[material].get()
                 kis = self.kis_vars[material].get()
                 
                 # Расчет по формуле S = V/(q·Kис)
-                area = volume / (q * kis)
+                _s = _v / (q * kis)
                 
-                total_area += area
+                total_area += _s
                 
                 results.append({
                     "material": material,
-                    "volume": volume,
+                    "volume": _v,
                     "q": q,
                     "kis": kis,
-                    "area": area
+                    "area": _s
                 })
             
             # Формируем текст результатов
@@ -161,7 +162,7 @@ class StorageCalculatorApp:
             }
             
         except Exception as e:
-            messagebox.showerror("Ошибка", str(e))
+            messagebox.showerror("Ошибка", f'{e}\n{traceback.format_exc()}')
             self.status_var.set("Ошибка при расчете")
     
     def save_to_excel(self):
@@ -170,17 +171,25 @@ class StorageCalculatorApp:
             return
         
         try:
+            # Запрашиваем путь для сохранения файла
+            file_path = filedialog.asksaveasfilename(
+                defaultextension=".xlsx",
+                filetypes=[("Excel files", "*.xlsx"), ("All files", "*.*")],
+                initialfile="Расчет_площади_склада.xlsx",
+                title="Выберите место для сохранения файла"
+            )
+            
+            if not file_path:  # Пользователь отменил сохранение
+                return
+            
             wb = Workbook()
             ws = wb.active
             ws.title = "Результаты расчета"
-            
-            # Заголовки
             headers = ["Материал", "Объем склада (м³)", "q (м³/м²)", "Кис", "Площадь (м²)"]
             
             for col, header in enumerate(headers, 1):
                 ws.cell(row=1, column=col, value=header).font = Font(bold=True)
             
-            # Данные
             for row, res in enumerate(self.last_results['materials'], 2):
                 ws.cell(row=row, column=1, value=res['material'])
                 ws.cell(row=row, column=2, value=res['volume'])
@@ -188,12 +197,10 @@ class StorageCalculatorApp:
                 ws.cell(row=row, column=4, value=res['kis'])
                 ws.cell(row=row, column=5, value=res['area'])
             
-            # Итоги
             last_row = len(self.last_results['materials']) + 3
             ws.cell(row=last_row, column=1, value="ИТОГО:").font = Font(bold=True)
             ws.cell(row=last_row, column=5, value=self.last_results['total_area']).font = Font(bold=True)
             
-            # Автоширина столбцов
             for col in ws.columns:
                 max_length = 0
                 column = col[0].column_letter
@@ -206,8 +213,6 @@ class StorageCalculatorApp:
                 adjusted_width = (max_length + 2) * 1.2
                 ws.column_dimensions[column].width = adjusted_width
             
-            # Сохранение файла
-            file_path = os.path.join(os.path.expanduser("~"), "Расчет_площади_склада.xlsx")
             wb.save(file_path)
             
             messagebox.showinfo("Успех", f"Файл успешно сохранен:\n{file_path}")
